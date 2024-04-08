@@ -49,18 +49,18 @@ def evaluate(model, dataloader, train_device):
     return accuracy
 
 # Prepare the data (integers)
-integers = torch.tensor([[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
-                         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
-                         [0., 0., 1., 0., 0., 0., 0., 0., 0., 0.],
-                         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
-                         [0., 0., 0., 0., 1., 0., 0., 0., 0., 0.],
-                         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
-                         [0., 0., 0., 0., 0., 0., 1., 0., 0., 0.],
-                         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.],
-                         [0., 0., 0., 0., 0., 0., 0., 0., 1., 0.],
-                         [0., 0., 0., 0., 0., 0., 0., 0., 0., 1.]], dtype=torch.float32)
+integers = torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=torch.float32)
 
-next_integers = torch.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=torch.long)
+next_integers = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
 
 # Create DataLoader for integers
 train_dataset_integers = TensorDataset(integers, next_integers)
@@ -68,7 +68,6 @@ train_loader_integers = DataLoader(train_dataset_integers, batch_size=10, shuffl
 
 # Prepare the data (Roman numerals)
 roman_numerals = torch.tensor([
-    [0, 0, 0, 0],  # 0
     [1, 0, 0, 0],  # I
     [2, 0, 0, 0],  # II
     [3, 0, 0, 0],  # III
@@ -77,10 +76,11 @@ roman_numerals = torch.tensor([
     [1, 1, 0, 0],  # VI
     [2, 1, 0, 0],  # VII
     [3, 1, 0, 0],  # VIII
-    [-1, 0, 1, 0]  # IX
+    [-1, 0, 1, 0], # IX
+    [0, 0, 1, 0]   # X
 ], dtype=torch.float32)
 
-next_roman_numerals = torch.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=torch.long)
+next_roman_numerals = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
 
 # Create DataLoader for Roman numerals
 train_dataset_roman = TensorDataset(roman_numerals, next_roman_numerals)
