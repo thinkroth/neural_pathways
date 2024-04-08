@@ -72,12 +72,12 @@ roman_numerals = torch.tensor([
     [1, 0, 0, 0],  # I
     [2, 0, 0, 0],  # II
     [3, 0, 0, 0],  # III
-    [-1, 1, 0, 0],  # IV
+    [-1, 1, 0, 0], # IV
     [0, 1, 0, 0],  # V
     [1, 1, 0, 0],  # VI
     [2, 1, 0, 0],  # VII
     [3, 1, 0, 0],  # VIII
-    [-1, 0, 1, 0]   # IX
+    [-1, 0, 1, 0]  # IX
 ], dtype=torch.float32)
 
 next_roman_numerals = torch.tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10], dtype=torch.long)
@@ -90,8 +90,8 @@ train_loader_roman = DataLoader(train_dataset_roman, batch_size=10, shuffle=True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Train the model (integers)
-INPUT_SIZE_INTEGERS = 10  # One-hot encoded vectors have 10 dimensions
-OUTPUT_SIZE_INTEGERS = 11  # Matches the number of classes (1-10)
+INPUT_SIZE_INTEGERS = integers.shape[1]
+OUTPUT_SIZE_INTEGERS = next_integers.max().item() + 1
 LEARNING_RATE = 0.1
 PATIENCE = 10
 
@@ -118,8 +118,8 @@ while True:
             break
 
 # Train the model (Roman numerals)
-INPUT_SIZE_ROMAN = 4
-OUTPUT_SIZE_ROMAN = 11
+INPUT_SIZE_ROMAN = roman_numerals.shape[1]
+OUTPUT_SIZE_ROMAN = next_roman_numerals.max().item() + 1
 
 MODEL_ROMAN = SingleNodeNet(INPUT_SIZE_ROMAN, OUTPUT_SIZE_ROMAN).to(device)
 optimizer_roman = optim.Adam(MODEL_ROMAN.parameters(), lr=LEARNING_RATE)
