@@ -223,3 +223,33 @@ plt.ylabel('Samples')
 
 plt.tight_layout()
 plt.show()
+
+# Generalization Testing Section
+
+print("\n--- Generalization Testing ---")
+
+# Test data for each representation
+one_hot_11 = torch.tensor([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=torch.float32)
+roman_11 = torch.tensor([[1, 0, 1, 0]], dtype=torch.float32)  # XI in Roman numeral representation
+integer_11 = torch.tensor([[11]], dtype=torch.float32)
+
+def test_model(model, input_tensor, representation_name):
+    model.eval()
+    with torch.no_grad():
+        input_tensor = input_tensor.to(device)
+        output = model(input_tensor)
+        probabilities = torch.softmax(output, dim=1)
+        predicted_class = torch.argmax(probabilities).item()
+        confidence = probabilities[0][predicted_class].item()
+    
+    print(f"\n{representation_name} Model:")
+    print(f"Predicted next value: {predicted_class}")
+    print(f"Confidence: {confidence:.4f}")
+    print("Probabilities for each class:")
+    for i, prob in enumerate(probabilities[0]):
+        print(f"{i+1}: {prob.item():.4f}")
+
+# Test each model
+test_model(MODEL_ONE_HOT, one_hot_11, "One-Hot Encoded")
+test_model(MODEL_ROMAN, roman_11, "Roman Numeral")
+test_model(MODEL_INTEGER, integer_11, "Integer Input")
