@@ -9,17 +9,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-# Define the single-node neural network
 class SingleNodeNet(nn.Module):
     def __init__(self, input_size, output_size):
         super(SingleNodeNet, self).__init__()
         self.fc = nn.Linear(input_size, output_size)
 
     def forward(self, x):
-        x = self.fc(x)
-        return x
+        return self.fc(x)
 
-# Define the training function
 def train(model, dataloader, train_criterion, optimizer, train_device):
     model.train()
     running_loss = 0.0
@@ -33,7 +30,6 @@ def train(model, dataloader, train_criterion, optimizer, train_device):
         running_loss += loss.item()
     return running_loss / len(dataloader)
 
-# Define the evaluation function
 def evaluate(model, dataloader, train_device):
     model.eval()
     predictions = []
@@ -45,28 +41,19 @@ def evaluate(model, dataloader, train_device):
             _, predicted = torch.max(outputs, 1)
             predictions.extend(predicted.cpu().numpy())
             targets.extend(labels.cpu().numpy())
-    accuracy = accuracy_score(targets, predictions)
-    return accuracy
+    return accuracy_score(targets, predictions)
 
-# Prepare the data (integers)
-integers = torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                         [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                         [0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                         [0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
-                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]], dtype=torch.float32)
+one_hot_data = torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]], dtype=torch.float32)
 
-next_integers = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
-
-# Create DataLoader for integers
-train_dataset_integers = TensorDataset(integers, next_integers)
-train_loader_integers = DataLoader(train_dataset_integers, batch_size=10, shuffle=True)
-
-# Prepare the data (Roman numerals)
 roman_numerals = torch.tensor([
     [1, 0, 0, 0],  # I
     [2, 0, 0, 0],  # II
@@ -80,99 +67,91 @@ roman_numerals = torch.tensor([
     [0, 0, 1, 0]   # X
 ], dtype=torch.float32)
 
-next_roman_numerals = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
+integer_inputs = torch.tensor([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], dtype=torch.float32)
 
-# Create DataLoader for Roman numerals
-train_dataset_roman = TensorDataset(roman_numerals, next_roman_numerals)
+next_values = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
+
+train_dataset_one_hot = TensorDataset(one_hot_data, next_values)
+train_loader_one_hot = DataLoader(train_dataset_one_hot, batch_size=10, shuffle=True)
+
+train_dataset_roman = TensorDataset(roman_numerals, next_values)
 train_loader_roman = DataLoader(train_dataset_roman, batch_size=10, shuffle=True)
 
-# Set up the device
+train_dataset_integer = TensorDataset(integer_inputs, next_values)
+train_loader_integer = DataLoader(train_dataset_integer, batch_size=10, shuffle=True)
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Train the model (integers)
-INPUT_SIZE_INTEGERS = integers.shape[1]
-OUTPUT_SIZE_INTEGERS = next_integers.max().item() + 1
 LEARNING_RATE = 0.1
 PATIENCE = 10
+OUTPUT_SIZE = next_values.max().item() + 1
 
-MODEL_INTEGERS = SingleNodeNet(INPUT_SIZE_INTEGERS, OUTPUT_SIZE_INTEGERS).to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer_integers = optim.Adam(MODEL_INTEGERS.parameters(), lr=LEARNING_RATE)
+def train_model(model, train_loader, input_size):
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    
+    best_loss = float('inf')
+    counter = 0
+    num_epochs = 0
+    
+    while True:
+        epoch_loss = train(model, train_loader, criterion, optimizer, device)
+        num_epochs += 1
+        print(f"Epoch [{num_epochs}], Loss: {epoch_loss:.4f}")
+        
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            counter = 0
+        else:
+            counter += 1
+            if counter >= PATIENCE:
+                print(f"Early stopping at epoch {num_epochs}")
+                break
+    
+    return num_epochs
 
-best_loss = float('inf')
-COUNTER = 0
-NUM_EPOCHS_INTEGERS = 0
+MODEL_ONE_HOT = SingleNodeNet(one_hot_data.shape[1], OUTPUT_SIZE).to(device)
+MODEL_ROMAN = SingleNodeNet(roman_numerals.shape[1], OUTPUT_SIZE).to(device)
+MODEL_INTEGER = SingleNodeNet(integer_inputs.shape[1], OUTPUT_SIZE).to(device)
 
-while True:
-    epoch_loss = train(MODEL_INTEGERS, train_loader_integers, criterion, optimizer_integers, device)
-    NUM_EPOCHS_INTEGERS += 1
-    print(f"Epoch [{NUM_EPOCHS_INTEGERS}], Loss: {epoch_loss:.4f}")
+print("Training One-Hot Encoded Model:")
+NUM_EPOCHS_ONE_HOT = train_model(MODEL_ONE_HOT, train_loader_one_hot, one_hot_data.shape[1])
+print("\nTraining Roman Numeral Model:")
+NUM_EPOCHS_ROMAN = train_model(MODEL_ROMAN, train_loader_roman, roman_numerals.shape[1])
+print("\nTraining Integer Input Model:")
+NUM_EPOCHS_INTEGER = train_model(MODEL_INTEGER, train_loader_integer, integer_inputs.shape[1])
 
-    if epoch_loss < best_loss:
-        best_loss = epoch_loss
-        COUNTER = 0
-    else:
-        COUNTER += 1
-        if COUNTER >= PATIENCE:
-            print(f"Early stopping at epoch {NUM_EPOCHS_INTEGERS}")
-            break
-
-# Train the model (Roman numerals)
-INPUT_SIZE_ROMAN = roman_numerals.shape[1]
-OUTPUT_SIZE_ROMAN = next_roman_numerals.max().item() + 1
-
-MODEL_ROMAN = SingleNodeNet(INPUT_SIZE_ROMAN, OUTPUT_SIZE_ROMAN).to(device)
-optimizer_roman = optim.Adam(MODEL_ROMAN.parameters(), lr=LEARNING_RATE)
-
-best_loss = float('inf')
-COUNTER = 0
-NUM_EPOCHS_ROMAN = 0
-
-while True:
-    epoch_loss = train(MODEL_ROMAN, train_loader_roman, criterion, optimizer_roman, device)
-    NUM_EPOCHS_ROMAN += 1
-    print(f"Epoch [{NUM_EPOCHS_ROMAN}], Loss: {epoch_loss:.4f}")
-
-    if epoch_loss < best_loss:
-        best_loss = epoch_loss
-        COUNTER = 0
-    else:
-        COUNTER += 1
-        if COUNTER >= PATIENCE:
-            print(f"Early stopping at epoch {NUM_EPOCHS_ROMAN}")
-            break
-
-# Evaluate the models on the training sets
-accuracy_integers = evaluate(MODEL_INTEGERS, train_loader_integers, device)
+accuracy_one_hot = evaluate(MODEL_ONE_HOT, train_loader_one_hot, device)
 accuracy_roman = evaluate(MODEL_ROMAN, train_loader_roman, device)
+accuracy_integer = evaluate(MODEL_INTEGER, train_loader_integer, device)
 
-print("Integer Model Performance:")
-print(f"Accuracy: {accuracy_integers:.4f}")
-print(f"Total Epochs: {NUM_EPOCHS_INTEGERS}")
+print("\nModel Performances:")
+print(f"One-Hot Encoded - Accuracy: {accuracy_one_hot:.4f}, Total Epochs: {NUM_EPOCHS_ONE_HOT}")
+print(f"Roman Numeral - Accuracy: {accuracy_roman:.4f}, Total Epochs: {NUM_EPOCHS_ROMAN}")
+print(f"Integer Input - Accuracy: {accuracy_integer:.4f}, Total Epochs: {NUM_EPOCHS_INTEGER}")
 
-print("Roman Numeral Model Performance:")
-print(f"Accuracy: {accuracy_roman:.4f}")
-print(f"Total Epochs: {NUM_EPOCHS_ROMAN}")
-
-# Analyze the learned representations
-print("\nInteger Model Weights:")
-print(MODEL_INTEGERS.fc.weight)
-print("\nRoman Numeral Model Weights:")
+print("\nLearned Weights:")
+print("One-Hot Encoded Model:")
+print(MODEL_ONE_HOT.fc.weight)
+print("\nRoman Numeral Model:")
 print(MODEL_ROMAN.fc.weight)
+print("\nInteger Input Model:")
+print(MODEL_INTEGER.fc.weight)
 
-# Entropy Analysis
 def calculate_entropy(model):
     weights = model.fc.weight.detach().cpu().numpy()
     probs = np.exp(weights) / np.sum(np.exp(weights))
     return entropy(probs.flatten())
 
-integer_entropy = calculate_entropy(MODEL_INTEGERS)
+one_hot_entropy = calculate_entropy(MODEL_ONE_HOT)
 roman_entropy = calculate_entropy(MODEL_ROMAN)
+integer_entropy = calculate_entropy(MODEL_INTEGER)
 
-print(f"\nInteger Model Entropy: {integer_entropy:.4f}")
+print("\nEntropy Analysis:")
+print(f"One-Hot Encoded Model Entropy: {one_hot_entropy:.4f}")
 print(f"Roman Numeral Model Entropy: {roman_entropy:.4f}")
+print(f"Integer Input Model Entropy: {integer_entropy:.4f}")
 
-# Representation Similarity Analysis (RSA)
 def perform_rsa(model, data):
     hidden_states = []
     with torch.no_grad():
@@ -184,56 +163,61 @@ def perform_rsa(model, data):
     similarity_matrix = squareform(similarity_matrix)
     return similarity_matrix
 
-integer_similarity = perform_rsa(MODEL_INTEGERS, integers)
+one_hot_similarity = perform_rsa(MODEL_ONE_HOT, one_hot_data)
 roman_similarity = perform_rsa(MODEL_ROMAN, roman_numerals)
+integer_similarity = perform_rsa(MODEL_INTEGER, integer_inputs)
 
-# KL Divergence Analysis
 def calculate_kl_divergence(model1, model2):
-    weights1 = model1.fc.weight.detach().cpu().numpy()
-    probs1 = np.exp(weights1) / np.sum(np.exp(weights1), axis=1, keepdims=True)
+    weights1 = model1.fc.weight.detach().cpu().numpy().flatten()
+    weights2 = model2.fc.weight.detach().cpu().numpy().flatten()
 
-    weights2 = model2.fc.weight.detach().cpu().numpy()
-    probs2 = np.exp(weights2) / np.sum(np.exp(weights2), axis=1, keepdims=True)
+    # Ensure weights have the same length
+    min_length = min(len(weights1), len(weights2))
+    weights1 = weights1[:min_length]
+    weights2 = weights2[:min_length]
 
-    kl_div = 0.0
-    for p1 in probs1:
-        p2 = probs2[:, :p1.shape[0]]
-        p2 = p2.reshape(-1)[:p1.shape[0]]
-        kl_div += np.sum(p1 * np.log(p1 / p2))
+    # Convert to probabilities
+    def to_probs(w):
+        exp_w = np.exp(w - np.max(w))  # Subtract max for numerical stability
+        return exp_w / np.sum(exp_w)
 
-    kl_div /= probs1.shape[0]
-    return kl_div
+    p = to_probs(weights1)
+    q = to_probs(weights2)
 
-kl_divergence = calculate_kl_divergence(MODEL_INTEGERS, MODEL_ROMAN)
-print(f"\nKL Divergence between Integer and Roman Numeral Models: {kl_divergence:.4f}")
+    # Add a small epsilon to avoid division by zero
+    epsilon = 1e-10
+    p = np.clip(p, epsilon, 1)
+    q = np.clip(q, epsilon, 1)
 
-# Visualization of Learned Representations
-plt.figure(figsize=(12, 5))
+    # Calculate KL divergence
+    kl_pq = np.sum(p * np.log(p / q))
+    kl_qp = np.sum(q * np.log(q / p))
+    
+    # Return the average of both directions (symmetric KL divergence)
+    return (kl_pq + kl_qp) / 2
 
-plt.subplot(1, 2, 1)
-sns.heatmap(
-    integer_similarity,
-    cmap='coolwarm',
-    square=True,
-    annot=True,
-    fmt='.2f',
-    cbar_kws={'shrink': 0.7}
-)
+print("\nKL Divergence Analysis:")
+print(f"One-Hot vs Roman: {calculate_kl_divergence(MODEL_ONE_HOT, MODEL_ROMAN):.4f}")
+print(f"One-Hot vs Integer: {calculate_kl_divergence(MODEL_ONE_HOT, MODEL_INTEGER):.4f}")
+print(f"Roman vs Integer: {calculate_kl_divergence(MODEL_ROMAN, MODEL_INTEGER):.4f}")
 
-plt.title('Integer Representation Similarity')
+plt.figure(figsize=(15, 5))
+
+plt.subplot(1, 3, 1)
+sns.heatmap(one_hot_similarity, cmap='coolwarm', square=True, annot=True, fmt='.2f', cbar_kws={'shrink': 0.7})
+plt.title('One-Hot Encoded Representation Similarity')
 plt.xlabel('Samples')
 plt.ylabel('Samples')
 
-plt.subplot(1, 2, 2)
-sns.heatmap(
-    roman_similarity,
-    cmap='coolwarm',
-    square=True,
-    annot=True,
-    fmt='.2f',
-    cbar_kws={'shrink': 0.7}
-)
+plt.subplot(1, 3, 2)
+sns.heatmap(roman_similarity, cmap='coolwarm', square=True, annot=True, fmt='.2f', cbar_kws={'shrink': 0.7})
 plt.title('Roman Numeral Representation Similarity')
+plt.xlabel('Samples')
+plt.ylabel('Samples')
+
+plt.subplot(1, 3, 3)
+sns.heatmap(integer_similarity, cmap='coolwarm', square=True, annot=True, fmt='.2f', cbar_kws={'shrink': 0.7})
+plt.title('Integer Input Representation Similarity')
 plt.xlabel('Samples')
 plt.ylabel('Samples')
 
