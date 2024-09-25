@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, mutual_info_score
 from scipy.stats import entropy
 from scipy.spatial.distance import pdist, squareform
 import matplotlib.pyplot as plt
@@ -43,16 +43,18 @@ def evaluate(model, dataloader, train_device):
             targets.extend(labels.cpu().numpy())
     return accuracy_score(targets, predictions)
 
-one_hot_data = torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                             [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-                             [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
-                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]], dtype=torch.float32)
+one_hot_data = torch.tensor([
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+],dtype=torch.float32)
 
 roman_numerals = torch.tensor([
     [1, 0, 0, 0],  # I
@@ -67,7 +69,9 @@ roman_numerals = torch.tensor([
     [0, 0, 1, 0]   # X
 ], dtype=torch.float32)
 
-integer_inputs = torch.tensor([[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], dtype=torch.float32)
+integer_inputs = torch.tensor(
+    [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], dtype=torch.float32
+)
 
 next_values = torch.tensor([2, 3, 4, 5, 6, 7, 8, 9, 10, 11], dtype=torch.long)
 
@@ -253,3 +257,66 @@ def test_model(model, input_tensor, representation_name):
 test_model(MODEL_ONE_HOT, one_hot_11, "One-Hot Encoded")
 test_model(MODEL_ROMAN, roman_11, "Roman Numeral")
 test_model(MODEL_INTEGER, integer_11, "Integer Input")
+
+def calculate_mutual_information(model, dataloader):
+    model.eval()
+    all_inputs = []
+    all_outputs = []
+    with torch.no_grad():
+        for inputs, _ in dataloader:
+            inputs = inputs.to(device)
+            outputs = model(inputs)
+            all_inputs.extend(inputs.cpu().numpy())
+            all_outputs.extend(outputs.cpu().numpy())
+    
+    all_inputs = np.array(all_inputs)
+    all_outputs = np.array(all_outputs)
+    
+    mi_scores = []
+    for i in range(all_inputs.shape[1]):
+        mi = mutual_info_score(all_inputs[:, i], np.argmax(all_outputs, axis=1))
+        mi_scores.append(mi)
+    
+    return np.mean(mi_scores)
+
+def calculate_l2_norm(model):
+    return torch.norm(model.fc.weight, p=2).item()
+
+# Calculate and print mutual information
+mi_one_hot = calculate_mutual_information(MODEL_ONE_HOT, train_loader_one_hot)
+mi_roman = calculate_mutual_information(MODEL_ROMAN, train_loader_roman)
+mi_integer = calculate_mutual_information(MODEL_INTEGER, train_loader_integer)
+
+print("\nMutual Information Analysis:")
+print(f"One-Hot Encoded Model MI: {mi_one_hot:.4f}")
+print(f"Roman Numeral Model MI: {mi_roman:.4f}")
+print(f"Integer Input Model MI: {mi_integer:.4f}")
+
+# Calculate and print L2 norm of weights
+l2_one_hot = calculate_l2_norm(MODEL_ONE_HOT)
+l2_roman = calculate_l2_norm(MODEL_ROMAN)
+l2_integer = calculate_l2_norm(MODEL_INTEGER)
+
+print("\nL2 Norm of Weights:")
+print(f"One-Hot Encoded Model L2 Norm: {l2_one_hot:.4f}")
+print(f"Roman Numeral Model L2 Norm: {l2_roman:.4f}")
+print(f"Integer Input Model L2 Norm: {l2_integer:.4f}")
+
+# Visualization of Mutual Information and L2 Norm
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+models = ['One-Hot', 'Roman', 'Integer']
+mi_scores = [mi_one_hot, mi_roman, mi_integer]
+plt.bar(models, mi_scores)
+plt.title('Mutual Information by Model')
+plt.ylabel('Mutual Information')
+
+plt.subplot(1, 2, 2)
+l2_norms = [l2_one_hot, l2_roman, l2_integer]
+plt.bar(models, l2_norms)
+plt.title('L2 Norm of Weights by Model')
+plt.ylabel('L2 Norm')
+
+plt.tight_layout()
+plt.show()
