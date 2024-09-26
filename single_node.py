@@ -275,7 +275,9 @@ def calculate_mutual_information(model, dataloader):
     mi_scores = []
     for i in range(all_inputs.shape[1]):
         mi = mutual_info_score(all_inputs[:, i], np.argmax(all_outputs, axis=1))
-        mi_scores.append(mi)
+        # Convert to Bits to see how close we are to the maximum Shannon entropy
+        mi_to_bits = mi / np.log(2)
+        mi_scores.append(mi_to_bits)
     
     return np.mean(mi_scores)
 
@@ -287,7 +289,7 @@ mi_one_hot = calculate_mutual_information(MODEL_ONE_HOT, train_loader_one_hot)
 mi_roman = calculate_mutual_information(MODEL_ROMAN, train_loader_roman)
 mi_integer = calculate_mutual_information(MODEL_INTEGER, train_loader_integer)
 
-print("\nMutual Information Analysis:")
+print("\nMutual Information Analysis (in Bits):")
 print(f"One-Hot Encoded Model MI: {mi_one_hot:.4f}")
 print(f"Roman Numeral Model MI: {mi_roman:.4f}")
 print(f"Integer Input Model MI: {mi_integer:.4f}")
